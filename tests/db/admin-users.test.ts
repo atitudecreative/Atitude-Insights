@@ -25,6 +25,7 @@ const { getDashboard } = await import("@/server/services/analytics");
 const { runJob, claimNextJob, enqueueJob } = await import("@/server/integrations/jobs");
 const { enqueueDueJobs } = await import("@/server/integrations/scheduler");
 const { addDays, todayIso } = await import("@/lib/period");
+const integrations = await import("@/server/services/integrations-admin");
 import type { Actor } from "@/server/auth/types";
 
 const db = createTestDb();
@@ -51,7 +52,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await systemDb().destroy();
+  await (await import("@/server/db")).closeSystemDb();
   await db.destroy();
 });
 
@@ -256,6 +257,18 @@ describe("dados de demonstração", () => {
     expect(acc.status).toBe("connected");
   });
 
+  it("ativos fictícios não se misturam com ministérios reais (e vice-versa)", async () => {
+    const asset = await db.selectFrom("app.external_assets as x").innerJoin("app.connected_accounts as a", "a.id", "x.connected_account_id")
+      .select("x.id").where("a.label", "like", "[DEMO]%").executeTakeFirstOrThrow();
+    await expect(integrations.addAssetMapping(admin, asset.id, ministryA.id)).rejects.toMatchObject({ code: "invalid" });
+    const demoMinistry = await db.selectFrom("app.ministries").select("id").where("is_demo", "=", true).executeTakeFirstOrThrow();
+    await expect(integrations.saveMappingRule(admin, null, {
+      provider: "meta", ruleType: "meta_campaign_name_prefix", matchValue: "KIDS", ministryId: demoMinistry.id,
+    })).rejects.toMatchObject({ code: "invalid" });
+    await expect(integrations.runSync(admin, (await db.selectFrom("app.connected_accounts").select("id").where("label", "like", "[DEMO]%").executeTakeFirstOrThrow()).id, "sync"))
+      .rejects.toMatchObject({ code: "invalid" });
+  });
+
   it("removeDemoData limpa tudo", async () => {
     const r = await removeDemoData(admin);
     expect(r.ministries).toBe(3);
@@ -266,5 +279,24 @@ describe("dados de demonstração", () => {
     expect(await db.selectFrom("app.social_posts").select("id").limit(1).execute()).toEqual([]);
     const audit = await db.selectFrom("app.activity_logs").select("action").where("entity_type", "=", "demo_data").execute();
     expect(audit.map((a) => a.action)).toEqual(expect.arrayContaining(["demo_loaded", "demo_removed"]));
+  });
+});
+
+describe("estado OAuth (CSRF)", () => {
+  it("é de uso único, expira e pertence ao usuário que iniciou", async () => {
+    const other = actorOf(await makeUser(db, { role: "superadmin" }), "superadmin");
+    const state = await integrations.createOAuthState(admin, "asana", { label: "Asana — teste", codeVerifier: "v".repeat(50) });
+    const stored = await db.selectFrom("app.oauth_states").select(["state_hash", "user_id"]).execute();
+    expect(stored.some((r) => r.state_hash === state)).toBe(false);
+    expect(await integrations.consumeOAuthState(other, "asana", state)).toBeNull();
+    expect(await integrations.consumeOAuthState(admin, "meta", state)).toBeNull();
+    expect(await integrations.consumeOAuthState(admin, "asana", state)).toEqual({ codeVerifier: "v".repeat(50), label: "Asana — teste" });
+    expect(await integrations.consumeOAuthState(admin, "asana", state)).toBeNull();
+
+    const expired = await integrations.createOAuthState(admin, "meta", {});
+    await db.updateTable("app.oauth_states").set({ expires_at: new Date(Date.now() - 1000) }).where("provider", "=", "meta").execute();
+    expect(await integrations.consumeOAuthState(admin, "meta", expired)).toBeNull();
+    expect(await integrations.consumeOAuthState(admin, "meta", null)).toBeNull();
+    await expect(integrations.createOAuthState(agencyGlobal, "asana", {})).rejects.toMatchObject({ code: "forbidden" });
   });
 });

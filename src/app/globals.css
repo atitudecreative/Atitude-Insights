@@ -17,14 +17,14 @@
   --border-strong: #cfd6e3;
   --foreground: #0f172a;
   --foreground-muted: #475569;
-  --foreground-subtle: #64748b;
+  --foreground-subtle: #5a6577;
   --ring: color-mix(in oklab, var(--brand) 55%, transparent);
 
-  --success: #059669;
+  --success: #047857;
   --success-soft: #e7f7f0;
-  --warning: #b45309;
+  --warning: #9a4a07;
   --warning-soft: #fdf3e2;
-  --danger: #dc2626;
+  --danger: #c81e1e;
   --danger-soft: #fdecec;
   --info: #2563eb;
   --info-soft: #e8f0fe;

@@ -77,12 +77,11 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
                 <div className="rounded-lg border border-border p-3">
                   <p className="text-sm font-medium">Conectar com OAuth</p>
                   {p.oauth ? (
-                    <form action={`/api/integrations/${p.key}/start`} method="get" className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
-                      <Field label="Nome da conexão" htmlFor={`oauth-label-${p.key}`} className="min-w-0 flex-1">
-                        <Input id={`oauth-label-${p.key}`} name="label" maxLength={120} placeholder={p.key === "asana" ? "Asana — Agência" : "Meta — Business Manager"} />
-                      </Field>
-                      <Button type="submit"><PlugZap /> Autorizar no {p.name}</Button>
-                    </form>
+                    <div className="mt-2 space-y-2">
+                      <p className="text-xs text-subtle">Você será levado ao {p.name} para autorizar o acesso somente leitura. O nome da conexão pode ser alterado depois.</p>
+                      {/* Link (e não formulário): a CSP `form-action 'self'` bloquearia o redirecionamento ao provedor. */}
+                      <Button asChild><a href={`/api/integrations/${p.key}/start`}><PlugZap /> Autorizar no {p.name}</a></Button>
+                    </div>
                   ) : (
                     <p className="mt-1 text-xs text-subtle">
                       <Badge tone="muted">Não configurada</Badge> Defina {p.oauthMissing} no servidor para habilitar o login OAuth.

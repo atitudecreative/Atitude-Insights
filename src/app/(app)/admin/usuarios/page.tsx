@@ -101,7 +101,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
             </CardContent>
           </Card>
         </div>
-        <Card className="h-fit">
+        <Card className="order-first h-fit xl:order-none">
           <CardHeader title="Convidar usuário" description="Gera um link de uso único válido por 72 horas." />
           <CardContent>
             <InviteForm action={inviteUserAction} ministries={[...ministries, ...demoMinistries].map((m) => ({ id: m.id, name: m.name }))} />

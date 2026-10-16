@@ -200,13 +200,14 @@ export async function getSyncJob(actor: Actor, id: string) {
       .leftJoin("app.users as u", "u.id", "j.requested_by")
       .select(["j.id", "j.job_type", "j.provider", "j.status", "j.trigger", "j.attempts", "j.max_attempts", "j.stats", "j.progress", "j.error",
         "j.created_at", "j.started_at", "j.finished_at", "j.run_after", "j.connected_account_id", "a.label as account_label", "a.status as account_status",
-        "u.name as requested_by_name"])
+        "a.external_user_id as account_external_user_id", "u.name as requested_by_name"])
       .where("j.id", "=", id).executeTakeFirst();
     if (!job) return null;
     // RLS: sync_logs só é visível para superadministradores (os demais recebem lista vazia).
     const logs = await trx.selectFrom("app.sync_logs").select(["id", "level", "message", "context", "created_at"])
       .where("sync_job_id", "=", id).orderBy("id").limit(500).execute();
-    return { job: { ...job, stats: (job.stats ?? {}) as Record<string, number> }, logs: logs.map((l) => ({ ...l, id: String(l.id) })) };
+    const { account_external_user_id: ext, ...rest } = job;
+    return { job: { ...rest, stats: (job.stats ?? {}) as Record<string, number>, account_is_demo: ext === DEMO_ACCOUNT_EXTERNAL_ID }, logs: logs.map((l) => ({ ...l, id: String(l.id) })) };
   });
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useState } from "react";
 import { CopyField } from "@/components/admin/copy-field";
 import type { AdminActionState } from "@/components/admin/action-button";
 import { Checkbox, Field, FormMessage, Input, Select } from "@/components/ui/form";
@@ -16,23 +16,23 @@ export function InviteForm({ action, ministries }: {
   ministries: Array<{ id: string; name: string }>;
 }) {
   const [state, formAction] = useActionState(action, null);
-  const [role, setRole] = useState<"superadmin" | "agency" | "ministry">("ministry");
-  const [ministryId, setMinistryId] = useState("");
-  const ref = useRef<HTMLFormElement>(null);
-  const err = state?.ok ? {} : (state?.errors ?? {});
-
-  useEffect(() => {
-    if (state?.ok) {
-      ref.current?.reset();
-      setRole("ministry");
-      setMinistryId("");
-    }
-  }, [state]);
-
   return (
     <div className="space-y-4">
       {state?.ok && state.link ? <CopyField value={state.link} label={state.linkLabel ?? "Link de convite"} hint={state.linkHint} /> : null}
-      <form ref={ref} action={formAction} className="space-y-3">
+      {/* A chave muda após cada convite criado: o formulário volta ao estado inicial sem efeitos. */}
+      <InviteFields key={state?.ok ? (state.link ?? "ok") : "form"} formAction={formAction} state={state} ministries={ministries} />
+    </div>
+  );
+}
+
+function InviteFields({ formAction, state, ministries }: {
+  formAction: (form: FormData) => void; state: AdminActionState | null; ministries: Array<{ id: string; name: string }>;
+}) {
+  const [role, setRole] = useState<"superadmin" | "agency" | "ministry">("ministry");
+  const [ministryId, setMinistryId] = useState("");
+  const err = state?.ok ? {} : (state?.errors ?? {});
+  return (
+      <form action={formAction} className="space-y-3">
         <Field label="Nome" htmlFor="inv-name" error={err.name} required>
           <Input id="inv-name" name="name" required minLength={2} maxLength={120} autoComplete="off" />
         </Field>
@@ -80,6 +80,5 @@ export function InviteForm({ action, ministries }: {
         <SubmitButton pendingLabel="Gerando convite…">Gerar convite</SubmitButton>
         <p className="text-xs text-subtle">Não há envio de e-mail: o link é exibido uma única vez para você repassar com segurança.</p>
       </form>
-    </div>
   );
 }

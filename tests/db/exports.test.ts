@@ -35,7 +35,7 @@ beforeAll(async () => {
     import("@/server/services/tasks"), import("@/server/services/deliverables"), import("@/server/services/events"),
     import("@/server/services/export"), import("@/server/db"),
   ]);
-  services = { listTasks: tasks.listTasks, listDeliverables: deliverables.listDeliverables, listEvents: events.listEvents, exp, closeDb: () => dbmod.systemDb().destroy() };
+  services = { listTasks: tasks.listTasks, listDeliverables: deliverables.listDeliverables, listEvents: events.listEvents, exp, closeDb: () => dbmod.closeSystemDb() };
 
   await resetData(db);
   A = await makeMinistry(db, "Ministério Alfa");

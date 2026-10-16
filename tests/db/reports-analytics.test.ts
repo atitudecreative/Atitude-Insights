@@ -62,8 +62,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  const { systemDb } = await import("@/server/db");
-  await systemDb().destroy();
+  await (await import("@/server/db")).closeSystemDb();
   await db.destroy();
 });
 

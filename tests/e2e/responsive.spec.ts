@@ -8,7 +8,7 @@ const PAGES = ["/painel", "/ministerios", "/ministerios/atitude-kids", "/campanh
 test("login acessível e sem rolagem horizontal", async ({ page }) => {
   await page.goto("/login");
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-  expect(results.violations.filter((v) => v.impact === "critical" || v.impact === "serious").map((v) => v.id)).toEqual([]);
+  expect(results.violations.filter((v) => v.impact === "critical" || v.impact === "serious").map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 });
 
 test("páginas principais sem rolagem horizontal e sem violações graves", async ({ page }) => {
@@ -19,7 +19,7 @@ test("páginas principais sem rolagem horizontal e sem violações graves", asyn
     await page.waitForLoadState("networkidle");
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow, `rolagem horizontal em ${url}`).toBeLessThanOrEqual(1);
-    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).disableRules(["color-contrast"]).analyze();
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     const serious = results.violations.filter((v) => v.impact === "critical" || v.impact === "serious");
     expect(serious.map((v) => `${v.id}: ${v.nodes[0]?.target}`), url).toEqual([]);
   }

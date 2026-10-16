@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, type Page } from "@playwright/test";
 import pg from "pg";
 import { E2E_PASSWORD } from "./seed";
 
 export function ids(): Record<string, string> {
-  return JSON.parse(readFileSync(path.join(__dirname, ".e2e-ids.json"), "utf8")) as Record<string, string>;
+  return JSON.parse(readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), ".e2e-ids.json"), "utf8")) as Record<string, string>;
 }
 
 export async function login(page: Page, email: string, password = E2E_PASSWORD) {

@@ -346,6 +346,14 @@ export async function addAssetMapping(actor: Actor, assetId: string, ministryId:
   assertSuperadmin(actor);
   if (!isUuid(assetId) || !isUuid(ministryId)) throw new ServiceError("Selecione o ministério.", "invalid", { ministryId: ["Selecione o ministério"] });
   await asUser(actor, async (trx) => {
+    const asset = await trx.selectFrom("app.external_assets as x").innerJoin("app.connected_accounts as a", "a.id", "x.connected_account_id")
+      .select(["a.external_user_id"]).where("x.id", "=", assetId).executeTakeFirst();
+    const ministry = await trx.selectFrom("app.ministries").select(["is_demo"]).where("id", "=", ministryId).executeTakeFirst();
+    if (!asset || !ministry) throw new ServiceError("Ativo ou ministério não encontrado.", "not_found");
+    // Dados reais e de demonstração nunca se misturam.
+    if (isDemoAccount(asset) !== ministry.is_demo) {
+      throw new ServiceError(ministry.is_demo ? "Ativos reais não podem ser associados a ministérios de demonstração." : "Ativos fictícios só podem ser associados a ministérios de demonstração.", "invalid", { ministryId: ["Ministério incompatível"] });
+    }
     const exists = await trx.selectFrom("app.asset_ministry_mappings").select("id").where("external_asset_id", "=", assetId).where("ministry_id", "=", ministryId).executeTakeFirst();
     if (exists) throw new ServiceError("Este ativo já está associado ao ministério.", "conflict");
     await trx.insertInto("app.asset_ministry_mappings").values({ external_asset_id: assetId, ministry_id: ministryId, created_by: actor.userId }).execute();
@@ -400,6 +408,10 @@ export async function saveMappingRule(actor: Actor, ruleId: string | null, raw: 
     ministry_id: v.ministryId, campaign_id: v.campaignId, event_id: v.eventId, priority: v.priority, active: v.active,
   };
   return asUser(actor, async (trx) => {
+    const ministry = await trx.selectFrom("app.ministries").select(["is_demo"]).where("id", "=", v.ministryId).executeTakeFirst();
+    if (!ministry) throw new ServiceError("Ministério não encontrado.", "invalid", { ministryId: ["Ministério não encontrado"] });
+    // Regras valem para as sincronizações reais: nunca enviam itens a ministérios de demonstração.
+    if (ministry.is_demo) throw new ServiceError("Regras não podem apontar para ministérios de demonstração.", "invalid", { ministryId: ["Ministério de demonstração"] });
     let id: string;
     if (ruleId) {
       if (!isUuid(ruleId)) throw new ServiceError("Regra inválida.", "invalid");

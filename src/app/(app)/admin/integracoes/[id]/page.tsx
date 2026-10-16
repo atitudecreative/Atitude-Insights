@@ -52,6 +52,9 @@ export default async function IntegrationAccountPage({ params, searchParams }: {
   } : null;
 
   const activeMinistries = ministries.filter((m) => m.status === "active");
+  // Dados reais e de demonstração nunca se misturam (validado também no serviço).
+  const mappable = activeMinistries.filter((m) => m.is_demo === a.is_demo);
+  const ruleTargets = activeMinistries.filter((m) => !m.is_demo);
   const types = [...new Set(assets.map((x) => x.asset_type))];
   const ruleAssets = a.provider === "asana" ? projects : assets.filter((x) => x.asset_type === "meta_ad_account" && !x.removed_at);
   const assetName = new Map(assets.map((x) => [x.id, x.name]));
@@ -98,7 +101,7 @@ export default async function IntegrationAccountPage({ params, searchParams }: {
                       <label className="sr-only" htmlFor={`map-${x.id}`}>Ministério para {x.name}</label>
                       <Select id={`map-${x.id}`} name="ministryId" required defaultValue="" className="h-9 w-auto min-w-0 flex-1 text-sm">
                         <option value="" disabled>Associar a ministério…</option>
-                        {activeMinistries.filter((m) => !own.some((o) => o.ministry_id === m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        {mappable.filter((m) => !own.some((o) => o.ministry_id === m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                       </Select>
                     </ActionForm>
                   </div>
@@ -165,7 +168,7 @@ export default async function IntegrationAccountPage({ params, searchParams }: {
           {live && !live.ok ? <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{live.message}</p> : null}
           {structure ? <p className="text-xs text-success">{structure.sections.length} seção(ões) e {structure.customFields.length} campo(s) personalizado(s) carregados.</p> : null}
           <RuleForm key={projectId ?? "none"} action={saveMappingRuleAction.bind(null, id, null)} provider={a.provider as "asana" | "meta"}
-            assets={ruleAssets.map((x) => ({ id: x.id, name: x.name }))} ministries={activeMinistries.map((m) => ({ id: m.id, name: m.name }))}
+            assets={ruleAssets.map((x) => ({ id: x.id, name: x.name }))} ministries={ruleTargets.map((m) => ({ id: m.id, name: m.name }))}
             campaigns={campaigns} events={events} structure={structure} />
         </CardContent>
       </Card>

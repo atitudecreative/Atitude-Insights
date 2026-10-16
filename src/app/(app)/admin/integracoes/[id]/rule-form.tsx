@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useState } from "react";
 import type { AdminActionState } from "@/components/admin/action-button";
 import { Checkbox, Field, FormMessage, Input, Select } from "@/components/ui/form";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -20,7 +20,7 @@ const ASANA_TYPES = [
   { value: "asana_custom_field", label: "Campo personalizado" },
 ];
 
-export function RuleForm({ action, provider, assets, ministries, campaigns, events, structure }: {
+type RuleFormProps = {
   action: (prev: AdminActionState | null, form: FormData) => Promise<AdminActionState>;
   provider: "asana" | "meta";
   assets: Option[];
@@ -28,23 +28,32 @@ export function RuleForm({ action, provider, assets, ministries, campaigns, even
   campaigns: Scoped[];
   events: Scoped[];
   structure: ProjectStructure | null;
+};
+
+/** Após salvar, a chave muda e o formulário volta ao estado inicial (sem efeitos). */
+export function RuleForm(props: RuleFormProps) {
+  const [nonce, setNonce] = useState(0);
+  const [state, formAction] = useActionState(async (prev: AdminActionState | null, form: FormData) => {
+    const result = await props.action(prev, form);
+    if (result.ok) setNonce((n) => n + 1);
+    return result;
+  }, null);
+  return <RuleFormInner key={nonce} {...props} state={state} formAction={formAction} />;
+}
+
+function RuleFormInner({ provider, assets, ministries, campaigns, events, structure, state, formAction }: RuleFormProps & {
+  state: AdminActionState | null; formAction: (form: FormData) => void;
 }) {
-  const [state, formAction] = useActionState(action, null);
   const [ruleType, setRuleType] = useState(provider === "asana" ? (structure ? "asana_section" : "asana_project") : "meta_campaign_name_prefix");
   const [assetId, setAssetId] = useState(structure?.projectAssetId ?? "");
   const [ministryId, setMinistryId] = useState("");
   const [fieldGid, setFieldGid] = useState("");
-  const ref = useRef<HTMLFormElement>(null);
   const err = state?.ok ? {} : (state?.errors ?? {});
   const live = structure && structure.projectAssetId === assetId ? structure : null;
   const field = live?.customFields.find((f) => f.gid === fieldGid);
 
-  useEffect(() => {
-    if (state?.ok) { ref.current?.reset(); setMinistryId(""); setFieldGid(""); }
-  }, [state]);
-
   return (
-    <form ref={ref} action={formAction} className="space-y-3">
+    <form action={formAction} className="space-y-3">
       <input type="hidden" name="provider" value={provider} />
       <div className="grid gap-3 sm:grid-cols-2">
         {provider === "asana" ? (

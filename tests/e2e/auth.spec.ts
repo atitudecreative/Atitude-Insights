@@ -13,7 +13,7 @@ test.describe("Autenticação", () => {
     await page.getByLabel("E-mail").fill(E2E.leaderA);
     await page.getByLabel("Senha").fill("senha-errada-123");
     await page.getByRole("button", { name: "Entrar" }).click();
-    await expect(page.getByRole("alert")).toContainText("E-mail ou senha inválidos");
+    await expect(page.getByText("E-mail ou senha inválidos.")).toBeVisible();
   });
 
   test("login, cookie protegido e logout invalidam a sessão", async ({ page, context }) => {

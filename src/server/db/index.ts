@@ -31,6 +31,13 @@ export function systemDb(): Database {
   return globalForDb.__atitudeDb;
 }
 
+/** Encerra o pool de sistema (scripts e testes). */
+export async function closeSystemDb(): Promise<void> {
+  const db = globalForDb.__atitudeDb;
+  globalForDb.__atitudeDb = undefined;
+  await db?.destroy();
+}
+
 /**
  * Executa `fn` em uma transação com o papel restrito `atitude_app` e o
  * usuário autenticado definido em `app.user_id`. Todas as políticas RLS se

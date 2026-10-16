@@ -555,7 +555,7 @@ describe("conexão da Meta", () => {
     expect(expired).toMatchObject({ ok: false, status: "expired" });
     expect(graph.calls).toHaveLength(0);
 
-    await db.updateTable("app.connected_accounts").set({ token_expires_at: new Date(Date.now() + 5 * 86_400_000), status: "connected" }).where("id", "=", accountId).execute();
+    await db.updateTable("app.connected_accounts").set({ token_expires_at: new Date(Date.now() + 5 * 86_400_000 - 3_600_000), status: "connected" }).where("id", "=", accountId).execute();
     const ok = await testMetaConnection(db, accountId, keys, {}, VERSION, graph.http);
     expect(ok).toMatchObject({ ok: true, status: "connected", daysRemaining: 4 });
     expect(ok.message).toContain("reconecte");
