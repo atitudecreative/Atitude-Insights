@@ -54,7 +54,7 @@ export function safeEqual(a: string, b: string): boolean {
 export function redactSecrets(text: string): string {
   return text
     .replace(/(access_token|refresh_token|client_secret|fb_exchange_token|code|token)=([^&\s"']+)/gi, "$1=[REDACTED]")
-    .replace(/Bearer\s+[A-Za-z0-9._\-~+/=]+/gi, "Bearer [REDACTED]")
+    .replace(/Bearer\s+[A-Za-z0-9._\-~+/=:]+/gi, "Bearer [REDACTED]")
     .replace(/\b(EAA[A-Za-z0-9]{20,})\b/g, "[REDACTED]")
     .replace(/\b\d\/\d{10,}:[A-Za-z0-9]{20,}\b/g, "[REDACTED]");
 }
