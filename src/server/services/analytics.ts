@@ -481,7 +481,7 @@ export async function communicationKpis(trx: Tx, scope: Scope, start: string, en
   ]);
   const derived = derivePaid(cur.totals);
   const paidSrc = { hasSource: sources.meta_ads.connected && (!scope.channel || scope.channel === "meta_ads"), syncing: sources.meta_ads.syncing, updatedAt: cur.lastUpdate };
-  const money = (v: number | null) => toMetric(v, { ...paidSrc, restricted: !investment.any });
+  const money = (v: number | null) => toMetric(v, { ...paidSrc, restricted: scope.ministryIds.length > 0 && !investment.any });
   const paid = {
     spend: money(cur.totals.spend),
     impressions: toMetric(cur.totals.impressions, paidSrc),
@@ -516,7 +516,7 @@ export async function communicationKpis(trx: Tx, scope: Scope, start: string, en
       clicks: compare(cur.totals.clicks, before.totals.clicks), results: compare(cur.totals.results, before.totals.results),
     },
     organic, organicChange, currency: cur.currency ?? "BRL",
-    investmentRestricted: !investment.any, investmentPartial: investment.any && !investment.all,
+    investmentRestricted: scope.ministryIds.length > 0 && !investment.any, investmentPartial: investment.any && !investment.all,
   };
 }
 
