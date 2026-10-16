@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { Actor } from "@/server/auth/types";
 import { audit } from "@/server/audit";
-import { todayIso } from "@/lib/period";
+import { parsePeriod, todayIso } from "@/lib/period";
+import { sql } from "@/server/db";
 import { asUser, isUuid, ServiceError, zodErrors } from "./context";
 import type { DataMode } from "./mode";
 
@@ -102,4 +103,48 @@ export async function linkTask(actor: Actor, taskId: string, campaignId: string 
     await audit(trx, { ministryId: t.ministry_id, entityType: "task", entityId: taskId, action: "linked", summary: `Vínculos da demanda "${t.name}" atualizados`,
       changes: { campaignId, previousCampaignId: t.campaign_id, eventId, previousEventId: t.event_id } });
   });
+}
+
+/**
+ * Opções dos formulários operacionais (demandas, entregáveis, eventos e
+ * classificação): somente ministérios que o usuário GERENCIA, com campanhas,
+ * eventos (e, opcionalmente, demandas e usuários da agência) desses
+ * ministérios. Calculado com as mesmas funções das políticas RLS.
+ */
+export async function operationsFormOptions(actor: Actor, mode: DataMode, opts: { tasks?: boolean; users?: boolean } = {}) {
+  return asUser(actor, async (trx) => {
+    const ministries = await trx.selectFrom("app.ministries").select(["id", "name"])
+      .where("is_demo", "=", mode === "demo").where("status", "=", "active")
+      .where(sql<boolean>`app.can_manage_ministry(id)`).orderBy("name").execute();
+    const ids = ministries.map((m) => m.id);
+    if (!ids.length) return { ministries, campaigns: [], events: [], tasks: [], users: [] };
+    const [campaigns, events, tasks, users] = await Promise.all([
+      trx.selectFrom("app.campaigns").select(["id", "name", "ministry_id"]).where("ministry_id", "in", ids).where("status", "<>", "archived")
+        .orderBy("name").limit(500).execute(),
+      trx.selectFrom("app.events").select(["id", "name", "ministry_id", "starts_at"]).where("ministry_id", "in", ids).where("archived_at", "is", null)
+        .orderBy("starts_at", "desc").limit(500).execute(),
+      opts.tasks
+        ? trx.selectFrom("app.tasks").select(["id", "name", "ministry_id"]).where("ministry_id", "in", ids).where("removed_in_source_at", "is", null)
+          .orderBy("completed").orderBy("created_at", "desc").limit(500).execute()
+        : Promise.resolve([]),
+      opts.users
+        ? trx.selectFrom("app.users").select(["id", "name"]).where("status", "=", "active").where("deleted_at", "is", null)
+          .where("global_role", "in", ["agency", "superadmin"]).orderBy("name").execute()
+        : Promise.resolve([]),
+    ]);
+    return { ministries, campaigns, events, tasks: tasks.map((t) => ({ id: t.id, name: t.name, ministry_id: t.ministry_id! })), users };
+  });
+}
+
+/**
+ * Filtros da tela Demandas a partir da URL (mesma interpretação na página e
+ * na exportação CSV). O período só é aplicado quando `periodo` é informado.
+ */
+export function taskFiltersFromParams(get: (key: string) => string | undefined, mode: DataMode): TaskFilters {
+  const periodo = get("periodo");
+  const period = periodo ? parsePeriod({ periodo, inicio: get("inicio"), fim: get("fim") }) : null;
+  return {
+    mode, ministryId: get("ministerio"), campaignId: get("campanha"), eventId: get("evento"), status: get("status"),
+    source: get("origem"), q: get("q"), from: period?.start, to: period?.end,
+  };
 }

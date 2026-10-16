@@ -49,7 +49,7 @@ export async function getDeliverable(actor: Actor, id: string) {
       .leftJoin("app.tasks as t", "t.id", "d.task_id").leftJoin("app.users as au", "au.id", "d.approved_by")
       .select(["d.id", "d.ministry_id", "d.campaign_id", "d.event_id", "d.task_id", "d.title", "d.description", "d.type", "d.status", "d.url", "d.due_date",
         "d.delivered_at", "d.approved_at", "d.created_at", "m.name as ministry_name", "c.name as campaign_name", "e.name as event_name", "t.name as task_name",
-        "t.permalink_url as task_url", "au.name as approved_by_name"])
+        "t.permalink_url as task_url", "au.name as approved_by_name", "m.is_demo"])
       .where("d.id", "=", id).executeTakeFirst();
     if (!d) return null;
     const [access, comments] = await Promise.all([
