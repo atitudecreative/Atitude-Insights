@@ -208,6 +208,7 @@ function buildTaskRow(task: AsanaTask, projectGid: string, accountId: string, cl
     permalink_url: task.permalink_url ?? null,
     raw: json(task),
     removed_in_source_at: null,
+    last_seen_in_source_at: sql<Date>`now()` as unknown as Date,
     ministry_id: classification.ministryId,
     campaign_id: classification.campaignId,
     event_id: classification.eventId,
@@ -246,6 +247,7 @@ async function upsertTasks(db: Database, rows: Insertable<AppTasks>[], stats: St
       permalink_url: eb.ref("excluded.permalink_url"),
       raw: eb.ref("excluded.raw"),
       removed_in_source_at: null,
+      last_seen_in_source_at: eb.ref("excluded.last_seen_in_source_at"),
       ministry_id: keepIfManual("ministry_id"),
       campaign_id: keepIfManual("campaign_id"),
       event_id: keepIfManual("event_id"),
@@ -320,7 +322,7 @@ async function reconcileRemovals(db: Database, accountId: string, projectGid: st
     .where("source", "=", "asana").where("connected_account_id", "=", accountId)
     .where("removed_in_source_at", "is", null)
     .where(sql<boolean>`projects @> ${JSON.stringify([{ gid: projectGid }])}::jsonb`)
-    .where("updated_at", "<", new Date(since))
+    .where(sql<Date>`coalesce(last_seen_in_source_at, updated_at)`, "<", new Date(since))
     .executeTakeFirst();
   return Number(result.numUpdatedRows);
 }

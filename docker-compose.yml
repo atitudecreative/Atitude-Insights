@@ -1,0 +1,41 @@
+# Ambiente completo para desenvolvimento/homologação: PostgreSQL + app + worker.
+# Uso: cp .env.example .env && docker compose up --build
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: atitude
+      POSTGRES_PASSWORD: atitude
+      POSTGRES_DB: atitude_insights
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atitude"]
+      interval: 5s
+      retries: 10
+  migrate:
+    build: .
+    command: ["npm", "run", "db:migrate"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://atitude:atitude@db:5432/atitude_insights
+    depends_on:
+      db: { condition: service_healthy }
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://atitude:atitude@db:5432/atitude_insights
+    ports: ["3000:3000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+  worker:
+    build: .
+    command: ["npm", "run", "worker"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://atitude:atitude@db:5432/atitude_insights
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+volumes:
+  pgdata:

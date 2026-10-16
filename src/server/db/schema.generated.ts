@@ -544,6 +544,7 @@ export interface AppTasks {
   event_id: string | null;
   external_id: string | null;
   id: Generated<string>;
+  last_seen_in_source_at: Timestamp | null;
   ministry_id: string | null;
   modified_at_source: Timestamp | null;
   name: string;

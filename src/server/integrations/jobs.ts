@@ -2,6 +2,7 @@ import { sql, type Database } from "@/server/db";
 import type { Json } from "@/server/db/schema.generated";
 import { redactSecrets } from "@/server/security/crypto";
 import { loadCredentials, type KeyRing, type StoredCredentials } from "./credentials";
+import { isDemoAccount } from "./demo-account";
 import { defaultHttpDeps, IntegrationError, type HttpDeps } from "./http";
 
 export type JobType = "asana_discover" | "asana_incremental" | "asana_full" | "meta_discover" | "meta_ads" | "meta_organic";
@@ -148,11 +149,16 @@ export async function runJob(db: Database, job: SyncJobRow, options: RunOptions)
     return { status: "failed", error: "Tipo de job não suportado" };
   }
 
-  const account = await db.selectFrom("app.connected_accounts").select(["id", "provider", "label", "auth_type", "status"])
+  const account = await db.selectFrom("app.connected_accounts").select(["id", "provider", "label", "auth_type", "status", "external_user_id"])
     .where("id", "=", job.connected_account_id).executeTakeFirst();
   if (!account || account.status === "disconnected" || account.status === "revoked") {
     await finish("cancelled", { error: "Conta desconectada" });
     return { status: "failed", error: "Conta desconectada" };
+  }
+  // Conta fictícia dos dados de demonstração: nunca sincroniza.
+  if (isDemoAccount(account)) {
+    await finish("cancelled", { error: "Conta de demonstração (dados fictícios) não sincroniza" });
+    return { status: "failed", error: "Conta de demonstração" };
   }
 
   let credentials: StoredCredentials | null;
