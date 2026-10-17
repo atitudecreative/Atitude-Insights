@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { KpiCard, MetricDisplay } from "@/components/ui/metric";
 import { ActivityFeed } from "@/components/ui/timeline";
+import { DataTable } from "@/components/ui/table";
 import { BarsChart, DonutChart, TrendChart } from "@/components/charts/charts";
 import { formatCurrency, formatDate, formatEventDate, formatMetric, formatNumber, formatRelative } from "@/lib/format";
 import { INTEGRATION_STATUS } from "@/lib/labels";
@@ -116,11 +117,17 @@ export function TrendSection({ d }: { d: Dashboard }) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       <Card>
-        <CardHeader title="Evolução dos resultados" description={`Pago: impressões e cliques ${bucketLabel}`} />
-        <CardContent>
+        <CardHeader title="Evolução dos resultados" description={`Pago: impressões e cliques ${bucketLabel} (escalas separadas)`} />
+        <CardContent className="space-y-2">
           {hasPaid ? (
-            <TrendChart title="Impressões e cliques de anúncios" rows={rows.map((r) => ({ date: r.date, impressions: r.impressions, clicks: r.clicks }))}
-              series={[{ key: "impressions", label: "Impressões", color: 0 }, { key: "clicks", label: "Cliques", color: 1 }]} />
+            <>
+              <p className="text-xs font-medium text-muted">Impressões</p>
+              <TrendChart title="Impressões de anúncios" height={180} rows={rows.map((r) => ({ date: r.date, impressions: r.impressions }))}
+                series={[{ key: "impressions", label: "Impressões", color: 0 }]} />
+              <p className="text-xs font-medium text-muted">Cliques</p>
+              <TrendChart title="Cliques em anúncios" height={140} rows={rows.map((r) => ({ date: r.date, clicks: r.clicks }))}
+                series={[{ key: "clicks", label: "Cliques", color: 1 }]} />
+            </>
           ) : (
             <EmptyState compact icon={Eye} title="Sem métricas pagas no período" description={d.sources.meta_ads.connected ? "Nenhum dado de anúncio para os filtros selecionados." : "Nenhuma conta de anúncios conectada para este escopo."} />
           )}
@@ -170,32 +177,17 @@ export function MinistryPerformance({ d, showSpend }: { d: Dashboard; showSpend:
     <Card>
       <CardHeader title="Desempenho por ministério" description="Entregas no período e alcance de mídia paga" />
       <CardContent className="px-0 pb-2">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead><tr className="border-b border-border text-left text-xs uppercase tracking-wide text-subtle">
-              <th scope="col" className="px-5 py-2 font-medium">Ministério</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Demandas concluídas</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Entregáveis</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Campanhas ativas</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Publicações</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Impressões (pago)</th>
-              {showSpend ? <th scope="col" className="px-5 py-2 text-right font-medium">Investimento</th> : null}
-            </tr></thead>
-            <tbody>
-              {d.byMinistry.map((m) => (
-                <tr key={m.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
-                  <td className="px-5 py-2.5"><Link href={`/ministerios/${m.slug}`} className="font-medium hover:text-brand">{m.name}</Link></td>
-                  <td className="tabular px-3 py-2.5 text-right">{formatNumber(m.tasks_done)}</td>
-                  <td className="tabular px-3 py-2.5 text-right">{formatNumber(m.deliverables)}</td>
-                  <td className="tabular px-3 py-2.5 text-right">{formatNumber(m.active_campaigns)}</td>
-                  <td className="tabular px-3 py-2.5 text-right">{formatNumber(m.organic_posts)}</td>
-                  <td className="tabular px-3 py-2.5 text-right">{m.impressions == null ? <span className="text-subtle">sem dado</span> : formatNumber(m.impressions, { compact: true })}</td>
-                  {showSpend ? <td className="tabular px-5 py-2.5 text-right">{m.spend == null ? <span className="text-subtle">sem dado</span> : formatCurrency(m.spend)}</td> : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable caption="Desempenho por ministério" rows={d.byMinistry} rowKey={(m) => m.id}
+          mobileTitle={(m) => <Link href={`/ministerios/${m.slug}`} className="hover:text-brand">{m.name}</Link>}
+          columns={[
+            { key: "name", header: "Ministério", hideOnMobile: true, cell: (m) => <Link href={`/ministerios/${m.slug}`} className="font-medium hover:text-brand">{m.name}</Link> },
+            { key: "tasks", header: "Demandas concluídas", align: "right", cell: (m) => formatNumber(m.tasks_done) },
+            { key: "deliverables", header: "Entregáveis", align: "right", cell: (m) => formatNumber(m.deliverables) },
+            { key: "campaigns", header: "Campanhas ativas", align: "right", cell: (m) => formatNumber(m.active_campaigns) },
+            { key: "posts", header: "Publicações", align: "right", cell: (m) => formatNumber(m.organic_posts) },
+            { key: "impressions", header: "Impressões (pago)", align: "right", cell: (m) => (m.impressions == null ? <span className="text-subtle">sem dado</span> : formatNumber(m.impressions, { compact: true })) },
+            ...(showSpend ? [{ key: "spend", header: "Investimento", align: "right" as const, cell: (m: Dashboard["byMinistry"][number]) => (m.spend == null ? <span className="text-subtle">sem dado</span> : formatCurrency(m.spend)) }] : []),
+          ]} />
       </CardContent>
     </Card>
   );

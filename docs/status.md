@@ -51,3 +51,13 @@ deve ser acompanhada em **Administração → Sincronizações**.
   único por campanha vem do valor "vida útil" informado pela Meta.
 * Métricas digitais não comprovam presença física ou inscrições: resultados de
   eventos devem ser registrados manualmente com a fonte.
+
+## Última validação
+
+| Verificação | Resultado |
+|---|---|
+| `npm run typecheck` | sem erros |
+| `npm run lint` | sem erros |
+| `npm test` (unitários + banco real) | 14 arquivos, 177 testes aprovados |
+| `npm run build` | build de produção concluído |
+| `npm run test:e2e` (Playwright, desktop + mobile, axe WCAG A/AA incluindo contraste) | 19 testes aprovados |

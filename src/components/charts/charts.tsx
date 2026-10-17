@@ -107,7 +107,7 @@ export function TrendChart({ title, rows, series, unit = "count", currency, heig
           {series.length > 1 ? <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: "var(--foreground-muted)" }} /> : null}
           {series.map((s, i) => (
             <Area key={s.key} type="monotone" dataKey={s.key} name={s.label} stroke={SERIES_COLORS[s.color ?? i]} strokeWidth={2}
-              fill={`url(#${gid}-${s.key})`} connectNulls={false} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--surface)" }} />
+              fill={`url(#${gid}-${s.key})`} connectNulls={false} dot={false} isAnimationActive={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--surface)" }} />
           ))}
         </AreaChart>
       </ResponsiveContainer>
@@ -138,7 +138,7 @@ export function BarsChart({ title, rows, series, unit = "count", currency, heigh
           <Tooltip content={<TooltipBox unit={unit} currency={currency} />} cursor={{ fill: "var(--surface-muted)" }} />
           {series.length > 1 ? <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: "var(--foreground-muted)" }} /> : null}
           {series.map((s, i) => (
-            <Bar key={s.key} dataKey={s.key} name={s.label} fill={SERIES_COLORS[s.color ?? i]} stackId={stacked ? "s" : undefined}
+            <Bar key={s.key} dataKey={s.key} name={s.label} fill={SERIES_COLORS[s.color ?? i]} stackId={stacked ? "s" : undefined} isAnimationActive={false}
               radius={stacked ? 0 : horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]} stroke="var(--surface)" strokeWidth={stacked ? 2 : 0} maxBarSize={36} />
           ))}
         </BarChart>
@@ -158,7 +158,7 @@ export function DonutChart({ title, items, unit = "count", height = 220 }: {
         <div className="relative h-full min-h-40 w-full max-w-[220px] flex-1">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={items} dataKey="value" nameKey="label" innerRadius="64%" outerRadius="92%" stroke="var(--surface)" strokeWidth={2} paddingAngle={0}>
+              <Pie data={items} dataKey="value" nameKey="label" innerRadius="64%" outerRadius="92%" stroke="var(--surface)" strokeWidth={2} paddingAngle={0} isAnimationActive={false}>
                 {items.map((it, i) => <Cell key={it.label} fill={SERIES_COLORS[it.color ?? i]} />)}
               </Pie>
               <Tooltip content={<TooltipBox unit={unit} />} />
