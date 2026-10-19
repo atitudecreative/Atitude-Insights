@@ -21,7 +21,8 @@
     "test:db": "vitest run --project db",
     "test:e2e": "playwright test",
     "keys:rotate": "tsx --conditions=react-server scripts/rotate-keys.ts",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "sync:once": "tsx --conditions=react-server scripts/sync-once.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",

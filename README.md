@@ -104,6 +104,7 @@ isolados em ministérios `[DEMO]` e nunca são somados aos dados reais.
 | `npm run db:types` | regenera os tipos a partir do banco |
 | `npm run db:seed-admin -- email "Nome"` | cria/promove o superadministrador |
 | `npm run worker` | agendador contínuo de sincronizações |
+| `npm run sync:once` | um ciclo de sincronização (Cron Job) |
 | `npm run keys:rotate` | recifra credenciais após trocar `ENCRYPTION_KEY` |
 | `npm run typecheck` / `lint` | TypeScript e ESLint |
 | `npm test` | testes unitários e de banco (requer PostgreSQL) |
@@ -115,7 +116,11 @@ o E2E usa `atitude_e2e`.
 
 ## Implantação em produção
 
-### Opção recomendada: Vercel + Supabase (Postgres)
+### Render + Supabase
+
+Guia passo a passo em [`docs/deploy-render.md`](docs/deploy-render.md) (Blueprint `render.yaml`: web + cron de sincronização).
+
+### Vercel + Supabase (Postgres)
 
 1. **Banco**: crie um projeto no Supabase (região São Paulo). Use a *connection
    string* do pooler em modo transação (porta 6543) como `DATABASE_URL` da
@@ -159,4 +164,5 @@ Veja [`.env.example`](.env.example). Obrigatórias: `DATABASE_URL`,
 * [LGPD e minimização de dados](docs/lgpd.md)
 * [Integração Asana](docs/integrations/asana.md)
 * [Integração Meta](docs/integrations/meta.md)
+* [Implantação no Render + Supabase](docs/deploy-render.md)
 * [Estado do projeto e pendências](docs/status.md)

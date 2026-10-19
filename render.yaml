@@ -1,0 +1,54 @@
+# Blueprint do Render: aplicação web + cron de sincronização.
+# Render → New → Blueprint → selecione este repositório.
+# Variáveis marcadas com sync: false são pedidas na criação (não ficam no Git).
+envVarGroups:
+  - name: atitude-insights
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
+      - key: META_GRAPH_VERSION
+        value: v23.0
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: ASANA_CLIENT_ID
+        sync: false
+      - key: ASANA_CLIENT_SECRET
+        sync: false
+
+services:
+  - type: web
+    name: atitude-insights
+    runtime: node
+    region: virginia
+    plan: starter
+    buildCommand: npm ci --include=dev && npm run build
+    preDeployCommand: npm run db:migrate
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - fromGroup: atitude-insights
+      - key: NODE_ENV
+        value: production
+
+  - type: cron
+    name: atitude-insights-sync
+    runtime: node
+    region: virginia
+    plan: starter
+    schedule: "*/15 * * * *"
+    buildCommand: npm ci --include=dev
+    startCommand: npm run sync:once
+    envVars:
+      - fromGroup: atitude-insights
+      - key: NODE_ENV
+        value: production
